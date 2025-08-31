@@ -21,6 +21,29 @@
       var map = L.map('map');
       var ROOT_SYD = {{default_pos}};
 
+      var LeafIcon = L.Icon.extend({
+        options: {
+            shadowUrl: '{{ url_for('static', filename='carshadow.png') }}',
+            iconSize:     [48, 48],
+            iconAnchor:   [32, 48],
+            popupAnchor:  [0, -48]
+        }
+      });
+
+      var car1 = new LeafIcon({iconUrl: '{{ url_for('static', filename='car1.png') }}'});
+      var car2 = new LeafIcon({iconUrl: '{{ url_for('static', filename='car2.png') }}'});
+      var car3 = new LeafIcon({iconUrl: '{{ url_for('static', filename='car3.png') }}'});
+      var car4 = new LeafIcon({iconUrl: '{{ url_for('static', filename='car4.png') }}'});
+      var car5 = new LeafIcon({iconUrl: '{{ url_for('static', filename='car5.png') }}'});
+
+      var icons = {
+        "car1": car1,
+        "car2": car2,
+        "car3": car3,
+        "car4": car4,
+        "car5": car5
+      };
+
       const queryString = window.location.search;
       const urlParams = new URLSearchParams(queryString);
       const password = urlParams.get('password');
@@ -62,8 +85,8 @@
           });
 
           data.forEach(item => {
-            var marker = L.marker([item.pos[0], item.pos[1]]).addTo(map);
-            marker.bindPopup("<b>" + item.user + "</b><br>Speed: ~" + item.speed + " km/h<br>Last Update: " + item.update_time);
+            var marker = L.marker([item.pos[0], item.pos[1]], { icon: icons[item.car] }).addTo(map);
+            marker.bindPopup("<b>" + item.user + "</b><br>Speed: ~" + item.speed + " km/h<br>Distance: ~" + item.diff + " km<br>Last Update: " + item.update_time);
           });
         });
       }

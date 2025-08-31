@@ -3,6 +3,7 @@ import json
 import datetime
 from pytz import timezone
 from geopy.distance import geodesic
+from random import random
 
 SYD = timezone("Australia/Sydney")
 
@@ -17,18 +18,23 @@ try:
 except FileNotFoundError:
     stored = {}
 
+with open("cars.json", "r") as f:
+    cars = json.load(f)
+
 def roundDownDateTime(dt):
     delta_min = dt.minute % 5
     return datetime.datetime(dt.year, dt.month, dt.day,
                              dt.hour, dt.minute - delta_min, 0, 0)
 
+def moderateData(location):
+    if random() > 0.5:
+        return location + random() / 100
+
+    return location - random() / 100
+
 @app.route("/ping")
 def ping():
     return "Pong"
-
-@app.route("/send_loc")
-def send_loc():
-    pass
 
 @app.route("/")
 def serve_page():
@@ -49,12 +55,15 @@ def send_data():
         return "No access", 401
 
     user = passwords[password]
+    if user == "Admin":
+        return "success"
+
     data = request.get_json()
     pos = data["pos"]
 
-    now = roundDownDateTime(datetime.datetime.now(SYD)).strftime("%H:%M")
+    now = roundDownDateTime(datetime.datetime.now(SYD)).strftime("%d-%m-%y %H:%M %p")
 
-    if now not in data:
+    if now not in stored:
         stored[now] = {user: (pos[0], pos[1])}
     else:
         stored[now][user] = (pos[0], pos[1])
@@ -87,23 +96,31 @@ def get_data():
     output = []
 
     if time is not None:
-
-        own_location = latest[user]
+        try:
+            own_location = latest[user]
+        except:
+            own_location = None
 
         for i in latest:
-            if i != user or True:
-                speed = round(geodesic(prev[i], latest[i]).km / 5 * 60, 2) if prev_time is not None else "Unknown"
+            if i != user and i != "Admin":
+                if prev_time and i in prev:
+                    time_diff = (
+                        datetime.datetime.strptime(time, "%d-%m-%y %H:%M %p") - datetime.datetime.strptime(prev_time, "%d-%m-%y %H:%M %p")
+                    ).total_seconds() / 60
+                    speed = round(geodesic(prev[i], latest[i]).km / time_diff * 60, 2)
+                else:
+                    speed = "Unknown"
                 user_data = {
                     "user": i,
-                    "pos": latest[i],
-                    "diff": round(geodesic(latest[i], own_location).km, 2),
+                    "pos": (moderateData(latest[i][0]), moderateData(latest[i][1])),
+                    "diff": round(geodesic(latest[i], own_location).km, 2) if own_location else "Unknown",
                     "speed": speed,
-                    "update_time": time
+                    "update_time": time[9:],
+                    "car": cars[i]
                 }
 
                 output.append(user_data)
 
     return output
-            
 
 app.run(debug=True)
