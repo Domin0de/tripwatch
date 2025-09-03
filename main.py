@@ -5,9 +5,16 @@ from pytz import timezone
 from geopy.distance import geodesic
 from random import random
 
+from werkzeug.middleware.proxy_fix import ProxyFix
+
+
 SYD = timezone("Australia/Sydney")
 
 app = Flask(__name__)
+
+app.wsgi_app = ProxyFix(
+    app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1
+)
 
 with open("passwords.json", "r") as f:
     passwords = json.load(f)
@@ -84,38 +91,44 @@ def get_data():
 
     try:
         time = list(stored.keys())[-1]
-        latest = stored[time]
     except IndexError:
         time = None
-    try:
-        prev_time = list(stored.keys())[-2]
-        prev = stored[prev_time]
-    except IndexError:
-        prev_time = None
 
     output = []
 
     if time is not None:
         try:
-            own_location = latest[user]
+            own_occurs = [j for j in stored.keys() if user in stored[j]][-1]
+            own_location = stored[own_occurs][user]
         except:
             own_location = None
 
-        for i in latest:
-            if i != user and i != "Admin":
-                if prev_time and i in prev:
+        for i in cars:
+            if i != user:
+                occurs = [j for j in stored.keys() if i in stored[j]]
+                latest_occur = occurs[-1] if occurs else None
+                prev_occur = occurs[-2] if occurs and len(occurs) > 1 else None
+
+                latest = stored[latest_occur] if latest_occur else {}
+                prev = stored[prev_occur] if prev_occur else {}
+
+                if not latest:
+                    continue
+
+                if prev_occur:
                     time_diff = (
-                        datetime.datetime.strptime(time, "%d-%m-%y %H:%M %p") - datetime.datetime.strptime(prev_time, "%d-%m-%y %H:%M %p")
+                        datetime.datetime.strptime(latest_occur, "%d-%m-%y %H:%M %p") - datetime.datetime.strptime(prev_occur, "%d-%m-%y %H:%M %p")
                     ).total_seconds() / 60
                     speed = round(geodesic(prev[i], latest[i]).km / time_diff * 60, 2)
                 else:
                     speed = "Unknown"
+
                 user_data = {
                     "user": i,
                     "pos": (moderateData(latest[i][0]), moderateData(latest[i][1])),
                     "diff": round(geodesic(latest[i], own_location).km, 2) if own_location else "Unknown",
                     "speed": speed,
-                    "update_time": time[9:],
+                    "update_time": latest_occur[9:],
                     "car": cars[i]
                 }
 
@@ -123,4 +136,5 @@ def get_data():
 
     return output
 
-app.run(debug=True)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int("5000"), debug=True)

@@ -25,8 +25,10 @@
         options: {
             shadowUrl: '{{ url_for('static', filename='carshadow.png') }}',
             iconSize:     [48, 48],
+            shadowSize:   [40, 48],
             iconAnchor:   [32, 48],
-            popupAnchor:  [0, -48]
+            popupAnchor:  [0, -48],
+            shadowAnchor: [4, 46]
         }
       });
 
@@ -35,13 +37,15 @@
       var car3 = new LeafIcon({iconUrl: '{{ url_for('static', filename='car3.png') }}'});
       var car4 = new LeafIcon({iconUrl: '{{ url_for('static', filename='car4.png') }}'});
       var car5 = new LeafIcon({iconUrl: '{{ url_for('static', filename='car5.png') }}'});
+      var car6 = new LeafIcon({iconUrl: '{{ url_for('static', filename='car6.png') }}'});
 
       var icons = {
         "car1": car1,
         "car2": car2,
         "car3": car3,
         "car4": car4,
-        "car5": car5
+        "car5": car5,
+        "car6": car6
       };
 
       const queryString = window.location.search;
