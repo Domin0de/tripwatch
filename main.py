@@ -128,7 +128,7 @@ def get_data():
                     "pos": (moderateData(latest[i][0]), moderateData(latest[i][1])),
                     "diff": round(geodesic(latest[i], own_location).km, 2) if own_location else "Unknown",
                     "speed": speed,
-                    "update_time": latest_occur[9:],
+                    "update_time": latest_occur,
                     "car": cars[i]
                 }
 
